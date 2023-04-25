@@ -16,7 +16,6 @@ def get_links_list_of_movies_categories():
     soup = BeautifulSoup(html, "html.parser")
 
     for bar in soup.find_all("div", {"class": "aux-content-widget-2"}):
-        # for category_bar in bar.find_all("span", {"class": "ab-widget"}):
         for category_tag in bar.find_all('a'):
             links.append(START_LINK + category_tag['href'])
     return links
