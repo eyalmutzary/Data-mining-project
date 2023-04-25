@@ -16,7 +16,6 @@ def load_more(driver):
         # Find the element by class name
         button = driver.find_element(By.CLASS_NAME, "lister-page-next")
         # Click the element
-        print("111")
         button.click()
         time.sleep(1)
 
