@@ -5,27 +5,92 @@ from selenium.webdriver.common.by import By
 from typing import List, Dict
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+import csv
 import asyncio
-AMOUNT_OF_EXPAND: int = 3
-PATH_TEST = "https://www.imdb.com/search/title/?genres=action&sort=user_rating,desc&title_type=feature&num_votes=25000,&pf_rd_m=A2FGELUUNOQJNL&pf_rd_p=94365f40-17a1-4450-9ea8-01159990ef7f&pf_rd_r=66KC56830Z4J29ES4WAB&pf_rd_s=right-6&pf_rd_t=15506&pf_rd_i=top&ref_=chttp_gnr_1"
 
 
-def load_more(driver):
+AMOUNT_OF_EXPAND: int = 19
+PATH = "https://www.imdb.com/chart/top/?ref_=nv_mv_250"
+START_LINK = "https://www.imdb.com"
+
+movie_list: List[List[str]] = []
+
+
+def get_links_list_of_movies_categories():
+    links = []
+    chrome_options = Options()
+    chrome_options.add_argument('--headless')
+    driver = webdriver.Chrome(options=chrome_options)
+    driver.get(PATH)
+    html = driver.page_source
+    soup = BeautifulSoup(html, "html.parser")
+
+    for bar in soup.find_all("div", {"class": "aux-content-widget-2"}):
+        for category_tag in bar.find_all('a'):
+            links.append(START_LINK + category_tag['href'])
+    return links[8::]
+
+
+def get_movies_links(driver):
+    html = driver.page_source
+    soup = BeautifulSoup(html, "html.parser")
+
+    for bar in soup.find_all("h3", {"class": "lister-item-header"}):
+        for category_tag in bar.find_all('a'):
+            movie_list.append([START_LINK + category_tag['href']])
+
+
+def get_all_links_category(driver):
+    get_movies_links(driver)
     for i in range(AMOUNT_OF_EXPAND):
+
         driver.implicitly_wait(1)
+
         # Find the element by class name
         button = driver.find_element(By.CLASS_NAME, "lister-page-next")
         # Click the element
         button.click()
+        get_movies_links(driver)
         time.sleep(1)
+
+
+def get_data_from_single_category(cat_link):
+    chrome_options = Options()
+    chrome_options.add_argument('--headless')
+    driver = webdriver.Chrome(options=chrome_options)
+    driver.get(cat_link)
+    get_all_links_category(driver)
+
+
+def export_to_csv():
+    # field names
+    category = 'movie_link'
+    file_name = 'output1.csv'
+
+    with open(file_name, 'w', newline='') as csv_file:
+        # Create a CSV writer object
+        writer = csv.writer(csv_file)
+
+        # Write the category as the first row in the CSV file
+        writer.writerow([category])
+
+        # Write the list of rows to the CSV file
+        writer.writerows(movie_list)
 
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    # chrome_options = Options()
-    # chrome_options.add_argument('--headless')
-    driver = webdriver.Chrome()
-    driver.get(PATH_TEST)
-    load_more(driver)
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+    category_link = get_links_list_of_movies_categories()
+    for lnk in category_link:
+        try:
+            print(lnk)
+            get_data_from_single_category(lnk)
+        except:
+            continue
+    print(movie_list)
+    print(len(movie_list))
+
+    export_to_csv()
+
+
